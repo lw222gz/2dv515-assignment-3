@@ -40,9 +40,6 @@ public class DatasetHandler {
 				}
 				pages.add(p);
 			}
-
-			System.out.println(pages.size());
-
 		} catch (IOException ex){
 			throw new RuntimeException("Something went wrong when trying to parse dataset.");
 		}
