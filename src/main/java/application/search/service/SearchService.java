@@ -41,12 +41,8 @@ public class SearchService {
 		normalizeScores(pageToDocumentLocationScore, true);
 
 		return allPages.stream()
-				.map(page -> {
-					PageDto dto = new PageDto(page.getPage());
-					dto.setScore(pageToWordFrequencyScore.get(page) + DOCUMENT_LOCATION_WEIGHT * pageToDocumentLocationScore.get(page));
-
-					return dto;
-				})
+				.map(page -> new PageDto(page.getPage(),
+							pageToWordFrequencyScore.get(page) + DOCUMENT_LOCATION_WEIGHT * pageToDocumentLocationScore.get(page)))
 				.sorted()
 				.collect(toList());
 	}
@@ -71,9 +67,11 @@ public class SearchService {
 	private void normalizeScores(Map<Page, Double> scoreMap, boolean smallerIsBetter){
 		if(smallerIsBetter){
 			double min = scoreMap.values().stream().min(Double::compareTo).get();
+
 			scoreMap.entrySet().forEach(entry -> entry.setValue(min / max(entry.getValue(), MIN_DIVISION)));
 		} else {
 			double max = scoreMap.values().stream().max(Double::compareTo).get();
+
 			scoreMap.entrySet().forEach(entry -> entry.setValue(entry.getValue() / max));
 		}
 	}

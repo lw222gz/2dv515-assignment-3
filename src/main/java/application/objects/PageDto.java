@@ -1,11 +1,12 @@
 package application.objects;
 
 public class PageDto implements Comparable<PageDto> {
-	private String page;
-	private Double score;
+	private final String page;
+	private final Double score;
 
-	public PageDto(String page){
+	public PageDto(String page, Double score){
 		this.page = page;
+		this.score = score;
 	}
 
 	public String getPage() {
@@ -14,10 +15,6 @@ public class PageDto implements Comparable<PageDto> {
 
 	public Double getScore() {
 		return score;
-	}
-
-	public void setScore(Double score) {
-		this.score = score;
 	}
 
 	@Override
