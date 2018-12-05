@@ -33,8 +33,8 @@ public class SearchService {
 		Map<Page, Double> pageToDocumentLocationScore = new HashMap<>();
 
 		for(Page p : allPages){
-			pageToWordFrequencyScore.put(p, wordFrequency(query, p));
-			pageToDocumentLocationScore.put(p, documentLocation(query, p));
+			pageToWordFrequencyScore.put(p, wordFrequencyScore(query, p));
+			pageToDocumentLocationScore.put(p, documentLocationScore(query, p));
 		}
 
 		normalizeScores(pageToWordFrequencyScore, false);
@@ -42,26 +42,26 @@ public class SearchService {
 
 		return allPages.stream()
 				.map(page -> new PageDto(page.getPage(),
-							pageToWordFrequencyScore.get(page) + DOCUMENT_LOCATION_WEIGHT * pageToDocumentLocationScore.get(page)))
+							pageToWordFrequencyScore.get(page), DOCUMENT_LOCATION_WEIGHT * pageToDocumentLocationScore.get(page)))
 				.sorted()
 				.collect(toList());
 	}
 
-	private double wordFrequency(Set<Integer> query, Page p){
+	private double wordFrequencyScore(Set<Integer> query, Page p){
 		return p.getWords().stream().filter(query::contains).count();
 	}
 
-	private double documentLocation(Set<Integer> query, Page p){
-		List<Integer> words = p.getWords();
-		int score = 0;
+	private double documentLocationScore(Set<Integer> query, Page p){
+		return query.stream().mapToInt(word -> calculateDocumentLocationScore(word, p.getWords())).sum();
+	}
 
+	private int calculateDocumentLocationScore(Integer word, List<Integer> words){
 		for(int i = 0; i < words.size(); i++){
-			if(query.contains(words.get(i))){
-				score += i;
+			if(words.get(i).equals(word)){
+				return i + 1;
 			}
 		}
-
-		return score != 0 ? score : Double.MAX_VALUE;
+		return 1000000;
 	}
 
 	private void normalizeScores(Map<Page, Double> scoreMap, boolean smallerIsBetter){
