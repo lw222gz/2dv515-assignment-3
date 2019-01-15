@@ -51,7 +51,7 @@ function executeSearch(){
 
     http.onreadystatechange=function(){
         if(this.readyState===4 && this.status===200){
-            let resultTable = "<table> <tr><th>Page</th><th>Total score</th> <th>Word freq. score</th> <th>Document location score</th> </tr>"
+            let resultTable = "<table> <tr><th>Page</th><th>Total score</th> <th>Word freq. score</th> <th>Document location score</th> <th>Word distance score</th> <th>Page rank score</th></tr>"
 
             let requestResult = JSON.parse(http.responseText);
 
@@ -61,6 +61,8 @@ function executeSearch(){
                 resultTable += "<td>" + Object.entries(requestResult)[i][1].totalScore.toFixed(3) + "</td>";
                 resultTable += "<td>" + Object.entries(requestResult)[i][1].wordFrequencyScore.toFixed(3) + "</td>";
                 resultTable += "<td> " + Object.entries(requestResult)[i][1].documentLocationScore.toFixed(3) +"</td>";
+                resultTable += "<td> " + Object.entries(requestResult)[i][1].wordDistanceScore.toFixed(3) +"</td>";
+                resultTable += "<td> " + Object.entries(requestResult)[i][1].pageRankScore.toFixed(3) +"</td>";
                 resultTable += "</tr>";
 
             }
