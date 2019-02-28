@@ -1,7 +1,6 @@
 package application.search.service;
 
 import static java.lang.Double.max;
-import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 
 import java.util.Collection;
@@ -11,21 +10,21 @@ import java.util.Map;
 
 import application.dataset.handler.DatasetHandler;
 import application.objects.Page;
-import application.objects.PageDto;
+import application.objects.PageDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class SearchService {
 
-	private static final double DOCUMENT_LOCATION_WEIGHT = 0.8;
-	private static final double MIN_DIVISION = 0.000001;
-	private static final double WORD_NOT_FOUND = 1000000;
+	static final double DOCUMENT_LOCATION_WEIGHT = 0.8;
+	static final double MIN_DIVISION = 0.000001;
+	static final double WORD_NOT_FOUND = 1000000;
 
 	@Autowired
 	private DatasetHandler datasetHandler;
 
-	public List<PageDto> search(List<String> queryWords){
+	public List<PageDTO> search(List<String> queryWords){
 
 		Collection<Page> allPages = datasetHandler.getPages();
 		List<Integer> query = queryWords.stream().map(String::hashCode).collect(toList());
@@ -45,42 +44,34 @@ public class SearchService {
 		normalizeScores(pageToWordDistanceScore, true);
 
 		return allPages.stream()
-				.map(page -> new PageDto(page,
+				.map(page -> new PageDTO(page,
 						pageToWordFrequencyScore.get(page),
-						DOCUMENT_LOCATION_WEIGHT * pageToDocumentLocationScore.get(page),
+						pageToDocumentLocationScore.get(page) * DOCUMENT_LOCATION_WEIGHT,
 						pageToWordDistanceScore.get(page)))
 				.sorted()
 				.collect(toList());
 	}
 
-	private double wordFrequencyScore(List<Integer> query, Page p){
+	/**
+	 * Gives a score depending on how often a word occurs
+	 * Higher scores are better
+	 * @param query
+	 * @param p
+	 * @return
+	 */
+	double wordFrequencyScore(List<Integer> query, Page p){
 		return p.getWords().stream().filter(query::contains).count();
 	}
 
-	private double documentLocationScore(List<Integer> query, Page p){
+	/**
+	 * Adds a score depending on the index of a words first occurance
+	 * Lower scores are better
+	 * @param query
+	 * @param p
+	 * @return
+	 */
+	double documentLocationScore(List<Integer> query, Page p){
 		return query.stream().mapToDouble(word -> calculateDocumentLocationScore(word, p.getWords())).sum();
-	}
-
-	private double wordDistanceScore(List<Integer> query, Page p){
-		double sum = 0;
-		for(int i = 0; i < query.size(); i++){
-			for(int k = i + 1; k < query.size(); k++){
-				Double scoreA = documentLocationScore(singletonList(query.get(i)), p);
-				Double scoreB = documentLocationScore(singletonList(query.get(k)), p);
-				if(scoreA.equals(WORD_NOT_FOUND) || scoreB.equals(WORD_NOT_FOUND)){
-					sum += WORD_NOT_FOUND;
-				} else {
-					double val = scoreA - scoreB;
-					if(val < 0){
-						val = val * -1.0;
-					}
-					sum += val;
-				}
-
-			}
-		}
-
-		return sum;
 	}
 
 	private double calculateDocumentLocationScore(Integer word, List<Integer> words){
@@ -92,13 +83,39 @@ public class SearchService {
 		return WORD_NOT_FOUND;
 	}
 
-	private void normalizeScores(Map<Page, Double> scoreMap, boolean smallerIsBetter){
+	/**
+	 * Adds a score that is decided by the aboslute value between the documentLocationScore of each word in the query
+	 * Each word is compares towards all others once. Will give same score to all if query only has 1 word.
+	 * Lower scores are better
+	 * @param query
+	 * @param p
+	 * @return
+	 */
+	double wordDistanceScore(List<Integer> query, Page p){
+		double sum = 0;
+		for(int i = 0; i < query.size(); i++){
+			for(int k = i + 1; k < query.size(); k++){
+				Double scoreA = calculateDocumentLocationScore(query.get(i), p.getWords());
+				Double scoreB = calculateDocumentLocationScore(query.get(k), p.getWords());
+
+				if(scoreA.equals(WORD_NOT_FOUND) || scoreB.equals(WORD_NOT_FOUND)){
+					sum += WORD_NOT_FOUND;
+				} else {
+					sum += Math.abs(scoreA - scoreB);
+				}
+			}
+		}
+
+		return sum;
+	}
+
+	void normalizeScores(Map<Page, Double> scoreMap, boolean smallerIsBetter){
 		if(smallerIsBetter){
-			double min = scoreMap.values().stream().min(Double::compareTo).get();
+			double min = scoreMap.values().stream().min(Double::compareTo).orElseThrow(() -> new RuntimeException("No min value found in score map."));
 
 			scoreMap.entrySet().forEach(entry -> entry.setValue(min / max(entry.getValue(), MIN_DIVISION)));
 		} else {
-			double max = scoreMap.values().stream().max(Double::compareTo).get();
+			double max = scoreMap.values().stream().max(Double::compareTo).orElseThrow(() -> new RuntimeException("No max value found in score map."));
 
 			scoreMap.entrySet().forEach(entry -> entry.setValue(entry.getValue() / max));
 		}

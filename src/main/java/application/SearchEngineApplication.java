@@ -6,7 +6,7 @@ import static java.util.stream.Collectors.toList;
 import java.util.List;
 
 import application.dataset.handler.DatasetHandler;
-import application.objects.PageDto;
+import application.objects.PageDTO;
 import application.search.service.SearchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +34,7 @@ public class SearchEngineApplication {
 	private SearchService searchService;
 
 	@GetMapping("/search")
-	public List<PageDto> search(@RequestParam(value = "query") List<String> query){
+	public List<PageDTO> search(@RequestParam(value = "query") List<String> query){
 		long time = currentTimeMillis();
 		try{
 			//Convert to lower case since dataset words are all lowercase.

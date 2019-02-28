@@ -55,7 +55,7 @@ public class Page {
 		outgoingLinks.add(link);
 	}
 
-	public int amountOfOutgoingLinks(){
+	public double amountOfOutgoingLinks(){
 		return outgoingLinks.size();
 	}
 }
